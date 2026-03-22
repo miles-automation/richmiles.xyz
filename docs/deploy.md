@@ -21,13 +21,15 @@ Workflow: GitHub Action **Ephemeral Staging**.
 - Trigger: workflow dispatch or PR comment `/stage` (owner-only).
 - Behavior: builds `linux/amd64`, uploads as `--image-tar`, stages to an ephemeral droplet, then runs the HTTP checks defined in `deploy/pack.toml`.
 
-## Production
+## Production deployment
 
-Workflow: GitHub Action **Promote to Production**.
+Deploy via platform CLI:
 
-- Trigger: workflow dispatch.
-- Behavior: builds and pushes `linux/amd64` image to GHCR as `ghcr.io/<owner>/richmiles-xyz-app:sha-<short>`, then pins `RICHMILES_XYZ_IMAGE_TAG=sha-...` on the prod droplet and restarts the `richmiles-xyz` service.
-- Verification: workflow checks `https://richmiles.xyz/healthz`.
+```bash
+./bin/platform prod rollout richmiles-xyz --tag sha-<short> --yes
+```
+
+This pins `RICHMILES_XYZ_IMAGE_TAG`, pulls the image, restarts, and health-checks against `https://richmiles.xyz/healthz`.
 
 ## Platform wiring
 

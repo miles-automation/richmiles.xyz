@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { type Project, fetchProjects } from '../data/projects'
+import type { Project } from '../api'
 
 const AUTO_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD = 50
@@ -31,16 +31,23 @@ function formatDeploy(iso: string | null): string {
   return `deployed ${diffD}d ago`
 }
 
-export default function ProjectCarousel() {
-  const [projects, setProjects] = useState<Project[]>([])
+type ProjectCarouselProps = {
+  projects: Project[]
+  source: string
+  warning: string | null
+}
+
+function sourceLabel(source: string): string {
+  if (source === 'live') return 'Live portfolio feed'
+  if (source === 'fallback') return 'Fallback portfolio feed'
+  return 'Loading portfolio feed'
+}
+
+export default function ProjectCarousel({ projects, source, warning }: ProjectCarouselProps) {
   const [current, setCurrent] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const touchStartRef = useRef<number | null>(null)
   const count = projects.length
-
-  useEffect(() => {
-    fetchProjects().then(setProjects)
-  }, [])
 
   const goTo = useCallback(
     (index: number) => {
@@ -105,7 +112,11 @@ export default function ProjectCarousel() {
       <section className="projects" id="projects">
         <div className="container">
           <h2 className="section-title">Projects</h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading projects...</p>
+          <div className="section-intro">
+            <span className={`source-badge source-${source}`}>{sourceLabel(source)}</span>
+            {warning && <p className="section-warning">{warning}</p>}
+          </div>
+          <p className="section-loading">Loading projects...</p>
         </div>
       </section>
     )
@@ -115,6 +126,10 @@ export default function ProjectCarousel() {
     <section className="projects" id="projects">
       <div className="container">
         <h2 className="section-title">Projects</h2>
+        <div className="section-intro">
+          <span className={`source-badge source-${source}`}>{sourceLabel(source)}</span>
+          {warning && <p className="section-warning">{warning}</p>}
+        </div>
 
         <div
           className="carousel-wrapper"

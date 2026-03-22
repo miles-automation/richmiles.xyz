@@ -1,6 +1,6 @@
 # richmiles.xyz
 
-Personal resume site built as a Vite + React + TypeScript SPA and served by Caddy (no backend, no database).
+Personal portfolio site built as a Vite + React + TypeScript SPA with a FastAPI backend. Caddy serves the built frontend and proxies `/api/*` to uvicorn inside a single container.
 
 ## Local development
 
@@ -19,9 +19,19 @@ make dev
 
 Then open `http://127.0.0.1:8000`.
 
+## Public API
+
+The site now exposes machine-readable portfolio data:
+
+- `GET /api/v1/profile`
+- `GET /api/v1/experience`
+- `GET /api/v1/projects`
+
+`/api/v1/projects` prefers live Spark Swarm data and falls back to repo content when the upstream API is unavailable.
+
 ## Health endpoints
 
-Served by Caddy inside the container:
+Served by FastAPI through Caddy inside the container:
 
 - `GET /healthz`
 - `GET /api/v1/healthz` (proxy routing check for the fleet contract)
@@ -31,6 +41,14 @@ Served by Caddy inside the container:
 This repo follows the Spark Swarm fleet contract.
 
 - Ephemeral staging: `deploy/pack.toml` + GitHub Action `Ephemeral Staging` (manual or `/stage` PR comment; owner-only).
-- Production: GitHub Action `Promote to Production` pins `RICHMILES_XYZ_IMAGE_TAG=sha-...` on the prod droplet and restarts service `richmiles-xyz`.
+- Production: `./bin/platform prod rollout richmiles-xyz --tag sha-<short> --yes` (pins `RICHMILES_XYZ_IMAGE_TAG`, pulls, restarts, health-checks).
 
 More detail: `docs/deploy.md`.
+
+## Tests
+
+Backend API tests live under `backend/tests/` and run with:
+
+```bash
+make test
+```

@@ -10,6 +10,7 @@ const experiences = [
     date: 'April 2024 - Present',
     title: 'Founder & Lead Developer',
     company: 'Miles Automation',
+    url: 'https://milesautomation.com',
     description:
       'Building a fleet of products on a self-hosted platform: project dashboards, digital vaults, context engines for LLMs, and the infrastructure that keeps them all running.',
   },
@@ -48,7 +49,15 @@ export default function ExperienceTimeline() {
               <div className="timeline-content">
                 <span className="timeline-date">{exp.date}</span>
                 <h3 className="timeline-title">{exp.title}</h3>
-                <h4 className="timeline-company">{exp.company}</h4>
+                <h4 className="timeline-company">
+                  {'url' in exp && exp.url ? (
+                    <a href={exp.url} target="_blank" rel="noopener noreferrer">
+                      {exp.company}
+                    </a>
+                  ) : (
+                    exp.company
+                  )}
+                </h4>
                 <p>{exp.description}</p>
               </div>
             </div>

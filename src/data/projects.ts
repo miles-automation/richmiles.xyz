@@ -26,7 +26,7 @@ const FALLBACK: Project[] = [
     title: 'Spark Swarm',
     description:
       'Dashboard for managing projects, secrets, deployments, and fleet health across a multi-service platform.',
-    domain: 'swarm.sparkswarm.com',
+    domain: 'sparkswarm.com',
     stage: 'building',
     health: 'healthy',
     last_deploy_at: null,

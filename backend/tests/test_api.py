@@ -54,7 +54,7 @@ class PortfolioApiTests(unittest.TestCase):
                         "slug": "spark-swarm",
                         "name": "Spark Swarm",
                         "description": "Live control plane",
-                        "domain": "swarm.sparkswarm.com",
+                        "domain": "sparkswarm.com",
                         "stage": "building",
                         "health": "healthy",
                         "last_deploy_at": "2026-03-13T12:00:00",
@@ -82,7 +82,7 @@ class PortfolioApiTests(unittest.TestCase):
                     },
                 ]
             },
-            request=httpx.Request("GET", "https://swarm.sparkswarm.com/api/v1/sparks"),
+            request=httpx.Request("GET", "https://sparkswarm.com/api/v1/sparks"),
         )
         mock_client = AsyncMock()
         mock_client.get.return_value = upstream_response

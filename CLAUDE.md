@@ -20,7 +20,7 @@ Vite + React + TypeScript portfolio site with a FastAPI backend. Single uvicorn 
 ## Environment variables
 
 - `SPARK_SWARM_API_KEY` — required for fetching project data from Spark Swarm
-- `SPARK_SWARM_API_URL` — defaults to `https://swarm.sparkswarm.com/api/v1`
+- `SPARK_SWARM_API_URL` — defaults to `https://sparkswarm.com/api/v1`
 
 ## Local dev
 

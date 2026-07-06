@@ -30,6 +30,6 @@ describe('Hero', () => {
   it('renders the profile photo with correct alt text', () => {
     render(<Hero onCta={() => {}} />)
     const img = screen.getByAltText('Rich Miles')
-    expect(img).toHaveAttribute('src', '/img/profile.png')
+    expect(img).toHaveAttribute('src', '/img/profile.webp')
   })
 })

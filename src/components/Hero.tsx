@@ -6,7 +6,7 @@ export default function Hero({ onCta }: HeroProps) {
   return (
     <section className="hero" id="about">
       <div className="container hero-content">
-        <img src="/img/profile.png" alt="Rich Miles" className="hero-photo" />
+        <img src="/img/profile.webp" alt="Rich Miles" className="hero-photo" />
         <h1>Rich Miles</h1>
         <p className="hero-tagline">I build tools that stay running.</p>
         <p className="hero-description">

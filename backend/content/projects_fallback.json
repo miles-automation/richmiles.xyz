@@ -1,0 +1,42 @@
+[
+  {
+    "id": "spark-swarm",
+    "title": "Spark Swarm",
+    "description": "Dashboard for managing projects, secrets, deployments, and fleet health across a multi-service platform.",
+    "domain": "sparkswarm.com",
+    "stage": "building",
+    "health": "healthy",
+    "last_deploy_at": null,
+    "category": "infrastructure"
+  },
+  {
+    "id": "ieomd",
+    "title": "In the Event of My Death",
+    "description": "Encrypted message vault that delivers letters, files, and instructions to designated recipients.",
+    "domain": "ieomd.com",
+    "stage": "live",
+    "health": "healthy",
+    "last_deploy_at": null,
+    "category": "security"
+  },
+  {
+    "id": "human-index",
+    "title": "Human Index",
+    "description": "Personal knowledge base that captures and indexes information with semantic search and personality modeling.",
+    "domain": "humanindex.io",
+    "stage": "building",
+    "health": "unknown",
+    "last_deploy_at": null,
+    "category": "productivity"
+  },
+  {
+    "id": "noodle",
+    "title": "Noodle",
+    "description": "Rate and track noodle bars with photo reviews, personal rankings, and location-based discovery.",
+    "domain": "callofthenoodle.com",
+    "stage": "live",
+    "health": "needs_love",
+    "last_deploy_at": null,
+    "category": "social"
+  }
+]

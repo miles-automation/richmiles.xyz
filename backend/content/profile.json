@@ -1,0 +1,25 @@
+{
+  "name": "Rich Miles",
+  "tagline": "I build tools that stay running.",
+  "description": "Twenty years of shipping software, from flow cytometry to fintech to AI-powered account intelligence. Lead engineer at Sturdy AI by day, building a fleet of side projects from Laramie, Wyoming by night.",
+  "photo_url": "/img/profile.png",
+  "cta_label": "View my work",
+  "location": "Laramie, Wyoming",
+  "contact_links": [
+    {
+      "label": "me@richmiles.xyz",
+      "href": "mailto:me@richmiles.xyz",
+      "icon": "fa-solid fa-envelope"
+    },
+    {
+      "label": "LinkedIn",
+      "href": "https://linkedin.com/in/r-miles",
+      "icon": "fa-brands fa-linkedin"
+    },
+    {
+      "label": "GitHub",
+      "href": "https://github.com/richmiles",
+      "icon": "fa-brands fa-github"
+    }
+  ]
+}

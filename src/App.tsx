@@ -55,10 +55,12 @@ export default function App() {
   return (
     <>
       <Nav navItems={navItems} activeId={activeId} onNav={handleNav} />
-      <Hero onCta={() => handleNav('projects')} />
-      <ExperienceTimeline />
-      <ProjectCarousel />
-      <Contact />
+      <main>
+        <Hero onCta={() => handleNav('projects')} />
+        <ExperienceTimeline />
+        <ProjectCarousel />
+        <Contact />
+      </main>
       <Footer />
     </>
   )

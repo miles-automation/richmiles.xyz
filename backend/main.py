@@ -1,3 +1,4 @@
+import mimetypes
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,12 @@ from backend.portfolio_content import (
     load_project_icons,
 )
 from backend.portfolio_schemas import ExperienceListResponse, ProfileResponse, ProjectListResponse, ProjectResponse
+
+# Python's mimetypes DB doesn't always know modern web formats, so FileResponse
+# would serve them as application/octet-stream. Register them explicitly.
+mimetypes.add_type("image/webp", ".webp")
+mimetypes.add_type("image/avif", ".avif")
+mimetypes.add_type("image/svg+xml", ".svg")
 
 _http_client: httpx.AsyncClient | None = None
 
@@ -129,5 +136,7 @@ if STATIC_DIR.exists():
             raise HTTPException(status_code=404)
         file_path = STATIC_DIR / full_path
         if file_path.is_file():
-            return FileResponse(file_path)
-        return FileResponse(STATIC_DIR / "index.html")
+            # Static assets (images, css, fonts, favicon, robots) — cache a week.
+            return FileResponse(file_path, headers={"Cache-Control": "public, max-age=604800"})
+        # index.html is the SPA shell; never cache it so deploys are picked up.
+        return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})

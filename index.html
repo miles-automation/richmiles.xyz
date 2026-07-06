@@ -3,18 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Rich Miles</title>
+    <title>Rich Miles — Software Engineer</title>
+    <meta
+      name="description"
+      content="Rich Miles — software engineer with 20 years shipping software, from flow cytometry to fintech to AI. Lead engineer at Sturdy AI, building a fleet of side projects from Laramie, Wyoming."
+    />
 
+    <!-- Fonts: preconnect + non-render-blocking load (swaps to stylesheet once fetched) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      />
+    </noscript>
 
     <link rel="stylesheet" href="/css/carousel.css" />
     <link rel="stylesheet" href="/styles.css?v=2.0" />

@@ -165,21 +165,32 @@
 
 .carousel-dots {
   display: flex;
-  gap: 8px;
+  gap: 4px;
 }
 
+/* 24x24 hit target for accessibility; the visible dot is drawn via ::before */
 .carousel-dot {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.carousel-dot::before {
+  content: '';
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--border);
-  border: none;
-  cursor: pointer;
-  padding: 0;
   transition: background-color 0.2s, transform 0.2s;
 }
 
-.carousel-dot.active {
+.carousel-dot.active::before {
   background: var(--primary);
   transform: scale(1.25);
 }

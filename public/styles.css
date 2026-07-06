@@ -144,7 +144,7 @@ nav {
 .btn {
   display: inline-block;
   background: var(--primary-dim);
-  color: var(--text);
+  color: var(--background);
   padding: 12px 28px;
   border: none;
   border-radius: 8px;
@@ -302,8 +302,8 @@ nav {
   color: var(--primary);
 }
 
-.contact-links i {
-  font-size: 1.1rem;
+.contact-links svg {
+  flex-shrink: 0;
 }
 
 /* Footer */

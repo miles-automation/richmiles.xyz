@@ -12,8 +12,8 @@ Vite + React + TypeScript portfolio site with a FastAPI backend. Single uvicorn 
 ## Fleet contract (Spark Swarm standard)
 
 - Health: `GET /healthz` and `GET /api/v1/healthz` (served by FastAPI directly)
-- Ephemeral staging: `deploy/pack.toml` + GitHub Action `Ephemeral Staging` (manual or `/stage`)
-- Production: `./bin/platform prod rollout richmiles-xyz --tag sha-<short> --yes` (pins `RICHMILES_XYZ_IMAGE_TAG`, pulls, restarts, health-checks)
+- CI/CD: **platform-ci** (not GitHub Actions — this repo has no `.github/workflows`). Merges to `main` auto build + rollout via the webhook to `ci.sparkswarm.com`; PRs get `make check`.
+- Production (manual): `./bin/platform build richmiles-xyz --rollout --yes` (build + pull + restart + health-check + auto-rollback)
 - Image: `ghcr.io/miles-automation/richmiles-xyz-app:sha-<short>`
 - Health URL: `https://richmiles.xyz/healthz`
 

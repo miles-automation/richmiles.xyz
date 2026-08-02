@@ -14,7 +14,8 @@ from backend import main as backend_main
 
 class PortfolioApiTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.client_context = TestClient(backend_main.app)
+        backend_main._lead_rate_buckets.clear()
+        self.client_context = TestClient(backend_main.app, client=("203.0.113.10", 50000))
         self.client = self.client_context.__enter__()
 
     def tearDown(self) -> None:
@@ -140,7 +141,11 @@ class PortfolioApiTests(unittest.TestCase):
             patch.object(backend_main, "_http_client", mock_client),
             patch.object(backend_main.settings, "spark_swarm_api_url", "https://sparkswarm.com/api/v1"),
         ):
-            response = self.client.post("/api/v1/lead", json=payload)
+            response = self.client.post(
+                "/api/v1/lead",
+                json=payload,
+                headers={"X-Forwarded-For": "198.51.100.7, 10.0.0.8"},
+            )
 
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json(), {"status": "accepted", "message": "Thanks"})
@@ -154,6 +159,7 @@ class PortfolioApiTests(unittest.TestCase):
                 "source_url": "https://richmiles.xyz/#services",
                 "website": "https://spam.example/",
             },
+            headers={"X-Forwarded-For": "198.51.100.7, 10.0.0.8, 203.0.113.10"},
         )
 
     def test_lead_endpoint_rejects_invalid_payload(self) -> None:
@@ -206,6 +212,23 @@ class PortfolioApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 429)
         self.assertEqual(response.json(), {"detail": "Too many submissions, please try again later."})
+
+    def test_lead_endpoint_enforces_local_rate_limit_per_client(self) -> None:
+        mock_client = AsyncMock()
+        mock_client.post.return_value = httpx.Response(202, json={"status": "accepted"})
+
+        with patch.object(backend_main, "_http_client", mock_client):
+            responses = [
+                self.client.post(
+                    "/api/v1/lead",
+                    json={"name": "Rich", "email": "rich@example.com"},
+                )
+                for _ in range(backend_main.LEAD_RATE_LIMIT_MAX_REQUESTS + 1)
+            ]
+
+        self.assertEqual([response.status_code for response in responses], [202] * 5 + [429])
+        self.assertEqual(mock_client.post.await_count, backend_main.LEAD_RATE_LIMIT_MAX_REQUESTS)
+        self.assertEqual(responses[-1].json(), {"detail": "Too many submissions, please try again later."})
 
     def test_lead_endpoint_maps_upstream_failure_to_503(self) -> None:
         mock_client = AsyncMock()

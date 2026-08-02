@@ -1,6 +1,8 @@
 import mimetypes
+from collections import OrderedDict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
+from time import monotonic
 from typing import Any
 
 import httpx
@@ -37,6 +39,10 @@ _http_client: httpx.AsyncClient | None = None
 LEAD_FAILURE_DETAIL = "Could not submit right now — email me instead: me@richmiles.xyz"
 LEAD_BODY_MAX_BYTES = 64 * 1024
 LEAD_BODY_TOO_LARGE_DETAIL = "Request body too large."
+LEAD_RATE_LIMIT_MAX_REQUESTS = 5
+LEAD_RATE_LIMIT_WINDOW_SECONDS = 60 * 60
+LEAD_RATE_LIMIT_MAX_CLIENTS = 4096
+_lead_rate_buckets: OrderedDict[str, deque[float]] = OrderedDict()
 
 
 class LeadBodySizeLimitMiddleware:
@@ -103,6 +109,42 @@ async def lifespan(app: FastAPI):
     _http_client = httpx.AsyncClient(timeout=10)
     yield
     await _http_client.aclose()
+
+
+def _request_client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def _forwarded_for_header(request: Request) -> str:
+    client_ip = _request_client_ip(request)
+    inbound_xff = request.headers.get("x-forwarded-for")
+    if not inbound_xff:
+        return client_ip
+
+    # Preserve the proxy chain and append this trusted hop; upstream can use its right-most trusted value.
+    return f"{inbound_xff}, {client_ip}"
+
+
+def _lead_rate_limited(client_ip: str) -> bool:
+    now = monotonic()
+    bucket = _lead_rate_buckets.get(client_ip)
+    if bucket is None:
+        bucket = deque()
+        _lead_rate_buckets[client_ip] = bucket
+    else:
+        _lead_rate_buckets.move_to_end(client_ip)
+
+    cutoff = now - LEAD_RATE_LIMIT_WINDOW_SECONDS
+    while bucket and bucket[0] <= cutoff:
+        bucket.popleft()
+
+    if len(bucket) >= LEAD_RATE_LIMIT_MAX_REQUESTS:
+        return True
+
+    bucket.append(now)
+    if len(_lead_rate_buckets) > LEAD_RATE_LIMIT_MAX_CLIENTS:
+        _lead_rate_buckets.popitem(last=False)
+    return False
 
 
 app = FastAPI(lifespan=lifespan)
@@ -194,7 +236,11 @@ async def get_projects():
 
 
 @app.post("/api/v1/lead")
-async def submit_lead(lead: LeadRequest):
+async def submit_lead(request: Request, lead: LeadRequest):
+    client_ip = _request_client_ip(request)
+    if _lead_rate_limited(client_ip):
+        return JSONResponse(status_code=429, content={"detail": "Too many submissions, please try again later."})
+
     if _http_client is None:
         return JSONResponse(status_code=503, content={"detail": LEAD_FAILURE_DETAIL})
 
@@ -211,6 +257,7 @@ async def submit_lead(lead: LeadRequest):
         response = await _http_client.post(
             f"{settings.spark_swarm_api_url.rstrip('/')}/public/sparks/richmiles-xyz/leads",
             json=payload,
+            headers={"X-Forwarded-For": _forwarded_for_header(request)},
         )
     except httpx.RequestError:
         return JSONResponse(status_code=503, content={"detail": LEAD_FAILURE_DETAIL})

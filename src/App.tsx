@@ -22,7 +22,7 @@ export default function App() {
       { id: 'about', label: 'About' },
       { id: 'experience', label: 'Experience' },
       { id: 'projects', label: 'Projects' },
-      { id: 'services', label: 'Services' },
+      { id: 'services', label: 'Work with me' },
       { id: 'contact', label: 'Contact' },
     ],
     [],

@@ -164,6 +164,36 @@ class PortfolioApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 422)
 
+    def test_lead_endpoint_rejects_oversized_request_body(self) -> None:
+        body = b'{"name":"Rich","email":"rich@example.com","message":"' + b"x" * 70_000 + b'"}'
+
+        response = self.client.post(
+            "/api/v1/lead",
+            content=body,
+            headers={"content-type": "application/json"},
+        )
+
+        self.assertEqual(response.status_code, 413)
+
+    def test_lead_endpoint_checks_actual_body_when_content_length_is_underreported(self) -> None:
+        body = b'{"name":"Rich","email":"rich@example.com","message":"' + b"x" * 70_000 + b'"}'
+
+        response = self.client.post(
+            "/api/v1/lead",
+            content=body,
+            headers={"content-type": "application/json", "content-length": "1"},
+        )
+
+        self.assertEqual(response.status_code, 413)
+
+    def test_lead_endpoint_rejects_oversized_website(self) -> None:
+        response = self.client.post(
+            "/api/v1/lead",
+            json={"name": "Rich", "email": "rich@example.com", "website": "x" * 201},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
     def test_lead_endpoint_maps_upstream_rate_limit(self) -> None:
         mock_client = AsyncMock()
         mock_client.post.return_value = httpx.Response(429, json={"error": "slow down"})

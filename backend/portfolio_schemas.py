@@ -52,7 +52,7 @@ class LeadRequest(BaseModel):
     email: str = Field(min_length=1, max_length=320)
     company: str | None = Field(default=None, max_length=200)
     message: str | None = Field(default=None, max_length=5000)
-    website: str | None = None
+    website: str | None = Field(default=None, max_length=200)
 
     @field_validator("name", "email")
     @classmethod

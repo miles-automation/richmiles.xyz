@@ -7,6 +7,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from backend.config import settings
 from backend.logging_config import configure_logging
@@ -34,6 +35,65 @@ mimetypes.add_type("image/svg+xml", ".svg")
 
 _http_client: httpx.AsyncClient | None = None
 LEAD_FAILURE_DETAIL = "Could not submit right now — email me instead: me@richmiles.xyz"
+LEAD_BODY_MAX_BYTES = 64 * 1024
+LEAD_BODY_TOO_LARGE_DETAIL = "Request body too large."
+
+
+class LeadBodySizeLimitMiddleware:
+    """Reject oversized lead bodies before FastAPI buffers and parses them."""
+
+    def __init__(self, app: ASGIApp, max_bytes: int = LEAD_BODY_MAX_BYTES) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"] != "/api/v1/lead":
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        content_length = headers.get(b"content-length")
+        if content_length is not None:
+            try:
+                if int(content_length) > self.max_bytes:
+                    await self._reject(scope, receive, send)
+                    return
+            except ValueError:
+                # A malformed hint is handled by the bounded read below.
+                pass
+
+        buffered_messages: list[dict[str, Any]] = []
+        body_size = 0
+        while True:
+            message = await receive()
+            if message["type"] != "http.request":
+                buffered_messages.append(message)
+                break
+
+            body_size += len(message.get("body", b""))
+            if body_size > self.max_bytes:
+                await self._reject(scope, receive, send)
+                return
+
+            buffered_messages.append(message)
+            if not message.get("more_body", False):
+                break
+
+        message_index = 0
+
+        async def replay_receive() -> dict[str, Any]:
+            nonlocal message_index
+            if message_index < len(buffered_messages):
+                message = buffered_messages[message_index]
+                message_index += 1
+                return message
+            return await receive()
+
+        await self.app(scope, replay_receive, send)
+
+    async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
+        response = JSONResponse(status_code=413, content={"detail": LEAD_BODY_TOO_LARGE_DETAIL})
+        await response(scope, receive, send)
 
 
 @asynccontextmanager
@@ -46,6 +106,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(LeadBodySizeLimitMiddleware)
 
 
 @app.middleware("http")

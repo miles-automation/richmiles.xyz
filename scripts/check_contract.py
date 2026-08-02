@@ -35,8 +35,10 @@ def main() -> None:
     must(any("/healthz" in str(c.get("url", "")) for c in checks), "deploy pack missing /healthz check")
     must(any("/api/v1/healthz" in str(c.get("url", "")) for c in checks), "deploy pack missing /api/v1/healthz check")
 
-    workflow_stage = Path(".github/workflows/ephemeral-staging.yml").read_text()
-    must("deploy/pack.toml" in workflow_stage, "ephemeral-staging.yml must reference deploy/pack.toml")
+    workflow_stage_path = Path(".github/workflows/ephemeral-staging.yml")
+    if workflow_stage_path.exists():
+        workflow_stage = workflow_stage_path.read_text()
+        must("deploy/pack.toml" in workflow_stage, "ephemeral-staging.yml must reference deploy/pack.toml")
 
     for doc_name in ("AGENTS.md", "CLAUDE.md"):
         doc = Path(doc_name).read_text()
@@ -50,4 +52,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

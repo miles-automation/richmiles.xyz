@@ -18,7 +18,13 @@ from backend.portfolio_content import (
     load_project_fallback,
     load_project_icons,
 )
-from backend.portfolio_schemas import ExperienceListResponse, ProfileResponse, ProjectListResponse, ProjectResponse
+from backend.portfolio_schemas import (
+    ExperienceListResponse,
+    LeadRequest,
+    ProfileResponse,
+    ProjectListResponse,
+    ProjectResponse,
+)
 
 # Python's mimetypes DB doesn't always know modern web formats, so FileResponse
 # would serve them as application/octet-stream. Register them explicitly.
@@ -27,6 +33,7 @@ mimetypes.add_type("image/avif", ".avif")
 mimetypes.add_type("image/svg+xml", ".svg")
 
 _http_client: httpx.AsyncClient | None = None
+LEAD_FAILURE_DETAIL = "Could not submit right now — email me instead: me@richmiles.xyz"
 
 
 @asynccontextmanager
@@ -123,6 +130,40 @@ async def get_projects():
 
     sparks = resp.json().get("sparks", [])
     return ProjectListResponse(projects=_enrich_live_projects(sparks), source="live")
+
+
+@app.post("/api/v1/lead")
+async def submit_lead(lead: LeadRequest):
+    if _http_client is None:
+        return JSONResponse(status_code=503, content={"detail": LEAD_FAILURE_DETAIL})
+
+    payload = {
+        "email": lead.email,
+        "name": lead.name,
+        "company": lead.company,
+        "message": lead.message,
+        "source_url": "https://richmiles.xyz/#services",
+        "website": lead.website,
+    }
+
+    try:
+        response = await _http_client.post(
+            f"{settings.spark_swarm_api_url.rstrip('/')}/public/sparks/richmiles-xyz/leads",
+            json=payload,
+        )
+    except httpx.RequestError:
+        return JSONResponse(status_code=503, content={"detail": LEAD_FAILURE_DETAIL})
+
+    if response.status_code == 202:
+        try:
+            return JSONResponse(status_code=202, content=response.json())
+        except ValueError:
+            return JSONResponse(status_code=503, content={"detail": LEAD_FAILURE_DETAIL})
+
+    if response.status_code == 429:
+        return JSONResponse(status_code=429, content={"detail": "Too many submissions, please try again later."})
+
+    return JSONResponse(status_code=503, content={"detail": LEAD_FAILURE_DETAIL})
 
 
 # SPA catch-all (when static dir exists from Docker build)

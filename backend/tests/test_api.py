@@ -36,7 +36,10 @@ class PortfolioApiTests(unittest.TestCase):
         self.assertEqual(data["items"][0]["company"], "Sturdy AI")
 
     def test_projects_endpoint_uses_fallback_when_api_key_missing(self) -> None:
-        with patch.dict(os.environ, {"SPARK_SWARM_API_KEY": ""}, clear=False):
+        with (
+            patch.dict(os.environ, {"SPARK_SWARM_API_KEY": ""}, clear=False),
+            patch.object(backend_main.settings, "spark_swarm_api_key", None),
+        ):
             response = self.client.get("/api/v1/projects")
 
         self.assertEqual(response.status_code, 200)
@@ -101,6 +104,76 @@ class PortfolioApiTests(unittest.TestCase):
         self.assertEqual([project["id"] for project in data["projects"]], ["spark-swarm", "human-index"])
         self.assertEqual(data["projects"][0]["icon"], "/img/spark-swarm.svg")
         self.assertEqual(data["projects"][1]["icon"], "/img/human-index.svg")
+
+    def test_lead_endpoint_forwards_success_and_honeypot_unchanged(self) -> None:
+        upstream_response = httpx.Response(
+            202,
+            json={"status": "accepted", "message": "Thanks"},
+        )
+        mock_client = AsyncMock()
+        mock_client.post.return_value = upstream_response
+        payload = {
+            "name": "Rich Miles",
+            "email": "rich@example.com",
+            "company": "Acme",
+            "message": "I need a portal.",
+            "website": "https://spam.example/",
+        }
+
+        with (
+            patch.object(backend_main, "_http_client", mock_client),
+            patch.object(backend_main.settings, "spark_swarm_api_url", "https://sparkswarm.com/api/v1"),
+        ):
+            response = self.client.post("/api/v1/lead", json=payload)
+
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.json(), {"status": "accepted", "message": "Thanks"})
+        mock_client.post.assert_awaited_once_with(
+            "https://sparkswarm.com/api/v1/public/sparks/richmiles-xyz/leads",
+            json={
+                "email": "rich@example.com",
+                "name": "Rich Miles",
+                "company": "Acme",
+                "message": "I need a portal.",
+                "source_url": "https://richmiles.xyz/#services",
+                "website": "https://spam.example/",
+            },
+        )
+
+    def test_lead_endpoint_rejects_invalid_payload(self) -> None:
+        response = self.client.post(
+            "/api/v1/lead",
+            json={"name": "", "email": "not-an-email", "company": "x" * 201},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_lead_endpoint_maps_upstream_rate_limit(self) -> None:
+        mock_client = AsyncMock()
+        mock_client.post.return_value = httpx.Response(429, json={"error": "slow down"})
+
+        with patch.object(backend_main, "_http_client", mock_client):
+            response = self.client.post(
+                "/api/v1/lead",
+                json={"name": "Rich", "email": "rich@example.com"},
+            )
+
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.json(), {"detail": "Too many submissions, please try again later."})
+
+    def test_lead_endpoint_maps_upstream_failure_to_503(self) -> None:
+        mock_client = AsyncMock()
+        mock_client.post.return_value = httpx.Response(500, json={"internal": "secret"})
+
+        with patch.object(backend_main, "_http_client", mock_client):
+            response = self.client.post(
+                "/api/v1/lead",
+                json={"name": "Rich", "email": "rich@example.com"},
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.json(), {"detail": backend_main.LEAD_FAILURE_DETAIL})
+        self.assertNotIn("secret", response.text)
 
 
 if __name__ == "__main__":

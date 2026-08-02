@@ -3,6 +3,7 @@ import Nav from './components/Nav'
 import Hero from './components/Hero'
 import ExperienceTimeline from './components/ExperienceTimeline'
 import ProjectCarousel from './components/ProjectCarousel'
+import Services from './components/Services'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
 
@@ -21,6 +22,7 @@ export default function App() {
       { id: 'about', label: 'About' },
       { id: 'experience', label: 'Experience' },
       { id: 'projects', label: 'Projects' },
+      { id: 'services', label: 'Services' },
       { id: 'contact', label: 'Contact' },
     ],
     [],
@@ -59,6 +61,7 @@ export default function App() {
         <Hero onCta={() => handleNav('projects')} />
         <ExperienceTimeline />
         <ProjectCarousel />
+        <Services />
         <Contact />
       </main>
       <Footer />

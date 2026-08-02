@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -104,6 +106,20 @@ class PortfolioApiTests(unittest.TestCase):
         self.assertEqual([project["id"] for project in data["projects"]], ["spark-swarm", "human-index"])
         self.assertEqual(data["projects"][0]["icon"], "/img/spark-swarm.svg")
         self.assertEqual(data["projects"][1]["icon"], "/img/human-index.svg")
+
+    def test_spa_catch_all_keeps_traversal_attempts_inside_static_root(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            static_root = Path(temp_dir)
+            (static_root / "index.html").write_text("SPA shell", encoding="utf-8")
+
+            with patch.object(backend_main, "STATIC_DIR", static_root):
+                encoded_response = self.client.get("/..%2f..%2f..%2fetc%2fpasswd")
+                raw_response = self.client.get("/../../../etc/passwd")
+
+        self.assertEqual(encoded_response.status_code, 200)
+        self.assertEqual(encoded_response.text, "SPA shell")
+        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(raw_response.text, "SPA shell")
 
     def test_lead_endpoint_forwards_success_and_honeypot_unchanged(self) -> None:
         upstream_response = httpx.Response(

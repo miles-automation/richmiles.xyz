@@ -171,13 +171,23 @@ STATIC_DIR = Path(__file__).parent / "static"
 if STATIC_DIR.exists():
     app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
 
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        if full_path.startswith("api/"):
-            raise HTTPException(status_code=404)
-        file_path = STATIC_DIR / full_path
-        if file_path.is_file():
-            # Static assets (images, css, fonts, favicon, robots) — cache a week.
-            return FileResponse(file_path, headers={"Cache-Control": "public, max-age=604800"})
-        # index.html is the SPA shell; never cache it so deploys are picked up.
-        return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
+
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404)
+
+    static_root = STATIC_DIR.resolve()
+    index_path = static_root / "index.html"
+    if not index_path.is_file():
+        raise HTTPException(status_code=404)
+
+    candidate = (static_root / full_path).resolve()
+    if not candidate.is_relative_to(static_root):
+        # Keep traversal attempts on the SPA shell rather than serving outside the static root.
+        return FileResponse(index_path, headers={"Cache-Control": "no-cache"})
+    if candidate.is_file():
+        # Static assets (images, css, fonts, favicon, robots) — cache a week.
+        return FileResponse(candidate, headers={"Cache-Control": "public, max-age=604800"})
+    # index.html is the SPA shell; never cache it so deploys are picked up.
+    return FileResponse(index_path, headers={"Cache-Control": "no-cache"})

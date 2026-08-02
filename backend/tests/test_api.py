@@ -176,7 +176,9 @@ class PortfolioApiTests(unittest.TestCase):
                 "source_url": "https://richmiles.xyz/#services",
                 "website": "https://spam.example/",
             },
-            headers={"X-Forwarded-For": "198.51.100.7, 10.0.0.8, 203.0.113.10"},
+            # Only the entry Caddy appended (the right-most inbound one) is trustworthy;
+            # forwarding the caller-supplied prefix would let upstream key on spoofed values.
+            headers={"X-Forwarded-For": "10.0.0.8"},
         )
 
     def test_lead_endpoint_rejects_invalid_payload(self) -> None:
@@ -246,6 +248,62 @@ class PortfolioApiTests(unittest.TestCase):
         self.assertEqual([response.status_code for response in responses], [202] * 5 + [429])
         self.assertEqual(mock_client.post.await_count, backend_main.LEAD_RATE_LIMIT_MAX_REQUESTS)
         self.assertEqual(responses[-1].json(), {"detail": "Too many submissions, please try again later."})
+
+    def test_lead_rate_limit_is_per_visitor_behind_the_proxy(self) -> None:
+        # Caddy appends the peer address, so every visitor shares one request.client.host.
+        # Keying on that would make the per-IP limit a global one and 429 real prospects.
+        mock_client = AsyncMock()
+        mock_client.post.return_value = httpx.Response(202, json={"status": "accepted"})
+
+        with patch.object(backend_main, "_http_client", mock_client):
+            exhausted = [
+                self.client.post(
+                    "/api/v1/lead",
+                    json={"name": "Rich", "email": "rich@example.com"},
+                    headers={"X-Forwarded-For": "198.51.100.7"},
+                )
+                for _ in range(backend_main.LEAD_RATE_LIMIT_MAX_REQUESTS + 1)
+            ]
+            other_visitor = self.client.post(
+                "/api/v1/lead",
+                json={"name": "Rich", "email": "rich@example.com"},
+                headers={"X-Forwarded-For": "198.51.100.8"},
+            )
+
+        self.assertEqual(exhausted[-1].status_code, 429)
+        self.assertEqual(other_visitor.status_code, 202)
+
+    def test_lead_rate_limit_ignores_spoofed_forwarded_entries(self) -> None:
+        # Only the right-most entry is Caddy's; anything left of it is caller-supplied,
+        # so rotating it must not hand the caller a fresh bucket each request.
+        mock_client = AsyncMock()
+        mock_client.post.return_value = httpx.Response(202, json={"status": "accepted"})
+
+        with patch.object(backend_main, "_http_client", mock_client):
+            responses = [
+                self.client.post(
+                    "/api/v1/lead",
+                    json={"name": "Rich", "email": "rich@example.com"},
+                    headers={"X-Forwarded-For": f"10.0.0.{i}, 198.51.100.9"},
+                )
+                for i in range(backend_main.LEAD_RATE_LIMIT_MAX_REQUESTS + 1)
+            ]
+
+        self.assertEqual(responses[-1].status_code, 429)
+
+    def test_lead_forwards_the_real_client_ip_upstream(self) -> None:
+        mock_client = AsyncMock()
+        mock_client.post.return_value = httpx.Response(202, json={"status": "accepted"})
+
+        with patch.object(backend_main, "_http_client", mock_client):
+            self.client.post(
+                "/api/v1/lead",
+                json={"name": "Rich", "email": "rich@example.com"},
+                headers={"X-Forwarded-For": "10.0.0.1, 198.51.100.11"},
+            )
+
+        sent = mock_client.post.await_args.kwargs["headers"]["X-Forwarded-For"]
+        self.assertEqual(sent, "198.51.100.11")
 
     def test_lead_endpoint_maps_upstream_failure_to_503(self) -> None:
         mock_client = AsyncMock()

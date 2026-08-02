@@ -112,17 +112,25 @@ async def lifespan(app: FastAPI):
 
 
 def _request_client_ip(request: Request) -> str:
+    """The real caller, as told to us by the one proxy we trust.
+
+    Caddy fronts this app and APPENDS the peer address to any X-Forwarded-For the
+    caller supplied, so the right-most entry is Caddy's own observation and the
+    entries left of it are attacker-chosen. `request.client.host` is Caddy itself —
+    the same value for every visitor on Earth — so using it as a rate-limit key
+    would turn a per-IP limit into one global bucket and 429 real prospects.
+    """
+    forwarded = request.headers.get("x-forwarded-for", "")
+    trusted = [part.strip() for part in forwarded.split(",") if part.strip()]
+    if trusted:
+        return trusted[-1]
     return request.client.host if request.client else "unknown"
 
 
 def _forwarded_for_header(request: Request) -> str:
-    client_ip = _request_client_ip(request)
-    inbound_xff = request.headers.get("x-forwarded-for")
-    if not inbound_xff:
-        return client_ip
-
-    # Preserve the proxy chain and append this trusted hop; upstream can use its right-most trusted value.
-    return f"{inbound_xff}, {client_ip}"
+    # Send exactly the caller we derived, so upstream's right-most-entry rule
+    # resolves to the real client rather than to this container's peer address.
+    return _request_client_ip(request)
 
 
 def _lead_rate_limited(client_ip: str) -> bool:

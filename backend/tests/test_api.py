@@ -30,6 +30,11 @@ class PortfolioApiTests(unittest.TestCase):
         self.assertEqual(data["location"], "Laramie, Wyoming")
         self.assertEqual(len(data["contact_links"]), 3)
 
+    def test_security_headers_include_hsts(self) -> None:
+        response = self.client.get("/healthz")
+
+        self.assertEqual(response.headers["Strict-Transport-Security"], "max-age=31536000; includeSubDomains")
+
     def test_experience_endpoint_returns_items(self) -> None:
         response = self.client.get("/api/v1/experience")
 

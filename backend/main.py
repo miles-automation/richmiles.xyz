@@ -1,12 +1,15 @@
 import mimetypes
+from collections import OrderedDict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
+from time import monotonic
 from typing import Any
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from backend.config import settings
 from backend.logging_config import configure_logging
@@ -34,6 +37,69 @@ mimetypes.add_type("image/svg+xml", ".svg")
 
 _http_client: httpx.AsyncClient | None = None
 LEAD_FAILURE_DETAIL = "Could not submit right now — email me instead: me@richmiles.xyz"
+LEAD_BODY_MAX_BYTES = 64 * 1024
+LEAD_BODY_TOO_LARGE_DETAIL = "Request body too large."
+LEAD_RATE_LIMIT_MAX_REQUESTS = 5
+LEAD_RATE_LIMIT_WINDOW_SECONDS = 60 * 60
+LEAD_RATE_LIMIT_MAX_CLIENTS = 4096
+_lead_rate_buckets: OrderedDict[str, deque[float]] = OrderedDict()
+
+
+class LeadBodySizeLimitMiddleware:
+    """Reject oversized lead bodies before FastAPI buffers and parses them."""
+
+    def __init__(self, app: ASGIApp, max_bytes: int = LEAD_BODY_MAX_BYTES) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope["method"] != "POST" or scope["path"] != "/api/v1/lead":
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        content_length = headers.get(b"content-length")
+        if content_length is not None:
+            try:
+                if int(content_length) > self.max_bytes:
+                    await self._reject(scope, receive, send)
+                    return
+            except ValueError:
+                # A malformed hint is handled by the bounded read below.
+                pass
+
+        buffered_messages: list[dict[str, Any]] = []
+        body_size = 0
+        while True:
+            message = await receive()
+            if message["type"] != "http.request":
+                buffered_messages.append(message)
+                break
+
+            body_size += len(message.get("body", b""))
+            if body_size > self.max_bytes:
+                await self._reject(scope, receive, send)
+                return
+
+            buffered_messages.append(message)
+            if not message.get("more_body", False):
+                break
+
+        message_index = 0
+
+        async def replay_receive() -> dict[str, Any]:
+            nonlocal message_index
+            if message_index < len(buffered_messages):
+                message = buffered_messages[message_index]
+                message_index += 1
+                return message
+            return await receive()
+
+        await self.app(scope, replay_receive, send)
+
+    async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
+        response = JSONResponse(status_code=413, content={"detail": LEAD_BODY_TOO_LARGE_DETAIL})
+        await response(scope, receive, send)
 
 
 @asynccontextmanager
@@ -45,7 +111,58 @@ async def lifespan(app: FastAPI):
     await _http_client.aclose()
 
 
-app = FastAPI(lifespan=lifespan)
+def _request_client_ip(request: Request) -> str:
+    """The real caller, as told to us by the one proxy we trust.
+
+    Caddy fronts this app and APPENDS the peer address to any X-Forwarded-For the
+    caller supplied, so the right-most entry is Caddy's own observation and the
+    entries left of it are attacker-chosen. `request.client.host` is Caddy itself —
+    the same value for every visitor on Earth — so using it as a rate-limit key
+    would turn a per-IP limit into one global bucket and 429 real prospects.
+    """
+    forwarded = request.headers.get("x-forwarded-for", "")
+    trusted = [part.strip() for part in forwarded.split(",") if part.strip()]
+    if trusted:
+        return trusted[-1]
+    return request.client.host if request.client else "unknown"
+
+
+def _forwarded_for_header(request: Request) -> str:
+    # Send exactly the caller we derived, so upstream's right-most-entry rule
+    # resolves to the real client rather than to this container's peer address.
+    return _request_client_ip(request)
+
+
+def _lead_rate_limited(client_ip: str) -> bool:
+    now = monotonic()
+    bucket = _lead_rate_buckets.get(client_ip)
+    if bucket is None:
+        bucket = deque()
+        _lead_rate_buckets[client_ip] = bucket
+    else:
+        _lead_rate_buckets.move_to_end(client_ip)
+
+    cutoff = now - LEAD_RATE_LIMIT_WINDOW_SECONDS
+    while bucket and bucket[0] <= cutoff:
+        bucket.popleft()
+
+    if len(bucket) >= LEAD_RATE_LIMIT_MAX_REQUESTS:
+        return True
+
+    bucket.append(now)
+    if len(_lead_rate_buckets) > LEAD_RATE_LIMIT_MAX_CLIENTS:
+        _lead_rate_buckets.popitem(last=False)
+    return False
+
+
+docs_enabled = settings.environment.lower() in {"dev", "development"}
+app = FastAPI(
+    lifespan=lifespan,
+    docs_url="/docs" if docs_enabled else None,
+    redoc_url="/redoc" if docs_enabled else None,
+    openapi_url="/openapi.json" if docs_enabled else None,
+)
+app.add_middleware(LeadBodySizeLimitMiddleware)
 
 
 @app.middleware("http")
@@ -54,6 +171,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
 
@@ -133,7 +251,11 @@ async def get_projects():
 
 
 @app.post("/api/v1/lead")
-async def submit_lead(lead: LeadRequest):
+async def submit_lead(request: Request, lead: LeadRequest):
+    client_ip = _request_client_ip(request)
+    if _lead_rate_limited(client_ip):
+        return JSONResponse(status_code=429, content={"detail": "Too many submissions, please try again later."})
+
     if _http_client is None:
         return JSONResponse(status_code=503, content={"detail": LEAD_FAILURE_DETAIL})
 
@@ -150,6 +272,7 @@ async def submit_lead(lead: LeadRequest):
         response = await _http_client.post(
             f"{settings.spark_swarm_api_url.rstrip('/')}/public/sparks/richmiles-xyz/leads",
             json=payload,
+            headers={"X-Forwarded-For": _forwarded_for_header(request)},
         )
     except httpx.RequestError:
         return JSONResponse(status_code=503, content={"detail": LEAD_FAILURE_DETAIL})
@@ -171,13 +294,25 @@ STATIC_DIR = Path(__file__).parent / "static"
 if STATIC_DIR.exists():
     app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
 
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        if full_path.startswith("api/"):
-            raise HTTPException(status_code=404)
-        file_path = STATIC_DIR / full_path
-        if file_path.is_file():
-            # Static assets (images, css, fonts, favicon, robots) — cache a week.
-            return FileResponse(file_path, headers={"Cache-Control": "public, max-age=604800"})
-        # index.html is the SPA shell; never cache it so deploys are picked up.
-        return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
+
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404)
+    if full_path.rstrip("/") in {"docs", "redoc", "openapi.json"}:
+        raise HTTPException(status_code=404)
+
+    static_root = STATIC_DIR.resolve()
+    index_path = static_root / "index.html"
+    if not index_path.is_file():
+        raise HTTPException(status_code=404)
+
+    candidate = (static_root / full_path).resolve()
+    if not candidate.is_relative_to(static_root):
+        # Keep traversal attempts on the SPA shell rather than serving outside the static root.
+        return FileResponse(index_path, headers={"Cache-Control": "no-cache"})
+    if candidate.is_file():
+        # Static assets (images, css, fonts, favicon, robots) — cache a week.
+        return FileResponse(candidate, headers={"Cache-Control": "public, max-age=604800"})
+    # index.html is the SPA shell; never cache it so deploys are picked up.
+    return FileResponse(index_path, headers={"Cache-Control": "no-cache"})

@@ -122,6 +122,18 @@ class PortfolioApiTests(unittest.TestCase):
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(raw_response.text, "SPA shell")
 
+    def test_interactive_api_docs_are_disabled_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            static_root = Path(temp_dir)
+            (static_root / "index.html").write_text("SPA shell", encoding="utf-8")
+
+            with patch.object(backend_main, "STATIC_DIR", static_root):
+                docs_response = self.client.get("/docs")
+                openapi_response = self.client.get("/openapi.json")
+
+        self.assertEqual(docs_response.status_code, 404)
+        self.assertEqual(openapi_response.status_code, 404)
+
     def test_lead_endpoint_forwards_success_and_honeypot_unchanged(self) -> None:
         upstream_response = httpx.Response(
             202,

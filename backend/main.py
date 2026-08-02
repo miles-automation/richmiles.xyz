@@ -147,7 +147,13 @@ def _lead_rate_limited(client_ip: str) -> bool:
     return False
 
 
-app = FastAPI(lifespan=lifespan)
+docs_enabled = settings.environment.lower() in {"dev", "development"}
+app = FastAPI(
+    lifespan=lifespan,
+    docs_url="/docs" if docs_enabled else None,
+    redoc_url="/redoc" if docs_enabled else None,
+    openapi_url="/openapi.json" if docs_enabled else None,
+)
 app.add_middleware(LeadBodySizeLimitMiddleware)
 
 
@@ -283,6 +289,8 @@ if STATIC_DIR.exists():
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
     if full_path.startswith("api/"):
+        raise HTTPException(status_code=404)
+    if full_path.rstrip("/") in {"docs", "redoc", "openapi.json"}:
         raise HTTPException(status_code=404)
 
     static_root = STATIC_DIR.resolve()

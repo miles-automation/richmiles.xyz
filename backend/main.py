@@ -250,6 +250,7 @@ async def get_projects():
     return ProjectListResponse(projects=_enrich_live_projects(sparks), source="live")
 
 
+# The consulting form moved to milesautomation.com. Keep this endpoint for existing callers and defensive coverage.
 @app.post("/api/v1/lead")
 async def submit_lead(request: Request, lead: LeadRequest):
     client_ip = _request_client_ip(request)

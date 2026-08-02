@@ -274,6 +274,147 @@ nav {
   background-color: var(--background);
 }
 
+/* Services Section */
+.services {
+  padding: 80px 0;
+  background-color: var(--background);
+}
+
+.services-intro,
+.services-fit {
+  max-width: 760px;
+  margin-right: auto;
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.services-intro {
+  margin-bottom: 40px;
+}
+
+.services-offers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 1040px;
+  margin: 0 auto 32px;
+}
+
+.service-card {
+  padding: 24px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+.service-card:hover {
+  border-color: var(--primary-dim);
+}
+
+.service-card h3 {
+  margin-bottom: 10px;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.service-card p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.services-fit {
+  margin-bottom: 40px;
+}
+
+.lead-form-wrapper {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.lead-form {
+  display: grid;
+  gap: 16px;
+}
+
+.lead-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lead-field label {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.lead-field input,
+.lead-field textarea {
+  width: 100%;
+  padding: 11px 12px;
+  color: var(--text);
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lead-field textarea {
+  resize: vertical;
+}
+
+.lead-field input:focus,
+.lead-field textarea:focus {
+  border-color: var(--primary-dim);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--glow);
+}
+
+.lead-submit {
+  justify-self: start;
+  margin-top: 8px;
+}
+
+.lead-submit:disabled {
+  cursor: wait;
+  opacity: 0.7;
+  transform: none;
+}
+
+.lead-status {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.lead-status-success {
+  color: var(--text);
+  text-align: center;
+}
+
+.lead-status-error {
+  color: #fca5a5;
+}
+
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 /* Contact Section */
 .contact {
   padding: 80px 0;
@@ -340,6 +481,15 @@ footer {
 
 /* Responsive: Mobile */
 @media (max-width: 768px) {
+  .nav-links {
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .nav-links li {
+    flex-shrink: 0;
+  }
+
   .nav-links a {
     padding: 12px 14px;
     font-size: 0.8rem;
@@ -393,6 +543,10 @@ footer {
 
 /* Alternating Timeline for Wide Screens */
 @media (min-width: 768px) {
+  .services-offers {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .timeline {
     position: relative;
     max-width: 800px;
@@ -451,5 +605,11 @@ footer {
     display: inline-block;
     max-width: 90%;
     text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .lead-form-wrapper {
+    padding: 24px 20px;
   }
 }

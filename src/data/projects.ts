@@ -2,87 +2,55 @@ export type Project = {
   id: string
   title: string
   description: string
-  domain: string | null
-  stage: string
-  health: string
-  last_deploy_at: string | null
-  category: string | null
+  url: string
   icon: string
 }
 
-/** Map spark slug to local icon path */
-const ICONS: Record<string, string> = {
-  'spark-swarm': '/img/spark-swarm.svg',
-  ieomd: '/img/ieomd.svg',
-  'human-index': '/img/human-index.svg',
-  noodle: '/img/noodle.svg',
-  'code-loom': '/img/code-loom.svg',
-  'edventure-trek': '/img/edventure-trek.png',
-}
-
-const FALLBACK: Project[] = [
+export const projects: Project[] = [
   {
-    id: 'spark-swarm',
-    title: 'Spark Swarm',
+    id: 'slopticus',
+    title: 'Slopticus',
     description:
-      'Dashboard for managing projects, secrets, deployments, and fleet health across a multi-service platform.',
-    domain: 'sparkswarm.com',
-    stage: 'building',
-    health: 'healthy',
-    last_deploy_at: null,
-    category: 'infrastructure',
-    icon: '/img/spark-swarm.svg',
+      'A Mac and iPhone workspace for coding agents. Runs Claude Code and Codex sessions on your Mac and lets you pick them up from your phone over an end-to-end encrypted relay.',
+    url: 'https://slopticus.com',
+    icon: '/img/slopticus.png',
+  },
+  {
+    id: 'sluice',
+    title: 'Sluice',
+    description:
+      'An open-source MCP proxy. Loads tool results into DuckDB so agents query a table instead of reading the raw payload.',
+    url: 'https://github.com/miles-automation/sluice',
+    icon: '/img/project.svg',
+  },
+  {
+    id: 'platform-ci',
+    title: 'platform-ci',
+    description:
+      'On-demand CI/CD that replaced GitHub Actions for my apps: starts a build server from a snapshot, runs checks and production rollouts with health checks and automatic rollback, then shuts down.',
+    url: 'https://github.com/miles-automation/platform-infra/tree/main/ci',
+    icon: '/img/project.svg',
+  },
+  {
+    id: 'human-index',
+    title: 'Human Index',
+    description: 'A local-first triage app that pulls email and messages into one morning digest.',
+    url: 'https://humanindex.io',
+    icon: '/img/human-index.svg',
   },
   {
     id: 'ieomd',
     title: 'In the Event of My Death',
     description:
-      'Encrypted message vault that delivers letters, files, and instructions to designated recipients.',
-    domain: 'ieomd.com',
-    stage: 'live',
-    health: 'healthy',
-    last_deploy_at: null,
-    category: 'security',
+      'Encrypted message vault that delivers letters, files and instructions to designated recipients.',
+    url: 'https://ieomd.com',
     icon: '/img/ieomd.svg',
   },
   {
-    id: 'human-index',
-    title: 'Human Index',
-    description:
-      'Personal knowledge base that captures and indexes information with semantic search and personality modeling.',
-    domain: 'humanindex.io',
-    stage: 'building',
-    health: 'unknown',
-    last_deploy_at: null,
-    category: 'productivity',
-    icon: '/img/human-index.svg',
-  },
-  {
-    id: 'noodle',
-    title: 'Noodle',
-    description:
-      'Rate and track noodle bars with photo reviews, personal rankings, and location-based discovery.',
-    domain: 'callofthenoodle.com',
-    stage: 'live',
-    health: 'needs_love',
-    last_deploy_at: null,
-    category: 'social',
-    icon: '/img/noodle.svg',
+    id: 'spark-swarm',
+    title: 'Spark Swarm',
+    description: 'Task tracking, secrets and deploy history shared by me and my coding agents.',
+    url: 'https://sparkswarm.com',
+    icon: '/img/spark-swarm.svg',
   },
 ]
-
-export function resolveIcon(project: Project): string {
-  return ICONS[project.id] ?? '/img/spark-swarm.svg'
-}
-
-export async function fetchProjects(): Promise<Project[]> {
-  try {
-    const resp = await fetch('/api/v1/projects')
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-    const data = await resp.json()
-    const projects: Project[] = data.projects ?? []
-    return projects.map((p) => ({ ...p, icon: ICONS[p.id] ?? '/img/spark-swarm.svg' }))
-  } catch {
-    return FALLBACK
-  }
-}

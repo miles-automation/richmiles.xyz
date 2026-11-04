@@ -1,10 +1,10 @@
 const experiences = [
   {
     date: 'May 2025 - Present',
-    title: 'Lead Software Engineer',
-    company: 'Sturdy AI',
+    title: 'Senior Software Engineer',
+    company: 'Sturdy',
     description:
-      'Lead engineer on the LLM infrastructure: rebuilt the prompt system, built usage tracking and caps, and migrated chat storage from Redis to Postgres. Built the Custom AI Signals pipeline end-to-end, from classification service and tuning to backpopulation and management UI. 129 MRs shipped in one year across AI infra, data engineering tooling, and reliability.',
+      "Work across the AI assistant, LLM services, inference pipeline, data engineering tools and frontend on a small team. Designed and built most of the AI report and email-digest platform (21,000+ reports, digests to 600+ customer users a month), built the LLM classification and conversation-summary pipelines (4 to 6 billion tokens a month), and rebuilt the assistant's people search from 45 seconds to 7 milliseconds worst case.",
   },
   {
     date: 'April 2024 - Present',
@@ -12,18 +12,18 @@ const experiences = [
     company: 'Miles Automation',
     url: 'https://milesautomation.com',
     description:
-      'Building a fleet of products on a self-hosted platform: project dashboards, digital vaults, context engines for LLMs, and the infrastructure that keeps them all running.',
+      'A product studio: I build and run about ten production services, including Slopticus (a Mac and iPhone workspace for coding agents), Sluice (an open-source MCP proxy on PyPI) and platform-ci (on-demand CI/CD with automatic rollback).',
   },
   {
     date: 'Aug 2023 - April 2024',
-    title: 'Game Developer',
+    title: 'Game Designer, Co-Founder',
     company: 'Edventure Studios',
     description:
       'Built Edventure Trek, an educational game using Unity/C#/SQLite on the frontend and Python/FastAPI/MySQL on the backend. Launched a successful Kickstarter campaign that validated core concepts.',
   },
   {
     date: 'Nov 2015 - Aug 2023',
-    title: 'CTO & Backend Developer',
+    title: 'CTO / Co-Founder',
     company: 'Neowire',
     description:
       'Built a full Azure CI/CD pipeline with blue/green deployments. Scaled operations to 250,000+ users in European markets while managing diverse data regulations.',

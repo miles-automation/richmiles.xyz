@@ -7,8 +7,8 @@ describe('Services', () => {
 
     expect(screen.getByRole('heading', { name: 'Work with me.' })).toBeInTheDocument()
     expect(document.querySelector('#services')).toBeInTheDocument()
-    expect(screen.getByText(/lead engineer with about 20 years/)).toBeInTheDocument()
-    expect(screen.getByText(/LLM infrastructure at Sturdy AI/)).toBeInTheDocument()
+    expect(screen.getByText(/senior engineer with about 20 years/)).toBeInTheDocument()
+    expect(screen.getByText(/LLM infrastructure at Sturdy,/)).toBeInTheDocument()
     expect(screen.getByText(/fleet of production side projects/)).toBeInTheDocument()
   })
 

@@ -7,7 +7,7 @@ Vite + React + TypeScript portfolio site with a FastAPI backend. Single uvicorn 
 - **Frontend**: React 19 + Vite 7 SPA (built to `dist/`, copied into `backend/static/` in Docker)
 - **Backend**: FastAPI (`backend/main.py`) running on uvicorn `:8000`
 - **Serving**: uvicorn on `:8000` — FastAPI serves `/api/*`, `/healthz`, and the SPA catch-all directly (no reverse proxy)
-- **Data**: No database. Backend fetches project data from Spark Swarm API at runtime.
+- **Data**: No database. The project list is static in `src/data/projects.ts`.
 
 ## Fleet contract (Spark Swarm standard)
 
@@ -20,8 +20,7 @@ Vite + React + TypeScript portfolio site with a FastAPI backend. Single uvicorn 
 
 ## Environment variables
 
-- `SPARK_SWARM_API_KEY` — required for fetching project data from Spark Swarm
-- `SPARK_SWARM_API_URL` — defaults to `https://sparkswarm.com/api/v1`
+- `SPARK_SWARM_API_URL`: defaults to `https://sparkswarm.com/api/v1`, used to forward `/api/v1/lead` submissions
 
 ## Local dev
 

@@ -38,7 +38,7 @@ url = "sqlite:///./data/app.db"
 source = "sparkswarm"
 project = "richmiles-xyz"
 environment = "staging"
-required = ["SPARK_SWARM_API_KEY"]
+required = []
 
 [[checks.pr]]
 type = "command"

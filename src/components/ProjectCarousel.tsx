@@ -1,65 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { type Project, fetchProjects } from '../data/projects'
+import { projects } from '../data/projects'
 
 const AUTO_INTERVAL_MS = 5000
 const SWIPE_THRESHOLD = 50
 
-function healthColor(health: string): string {
-  switch (health) {
-    case 'healthy':
-      return '#22c55e'
-    case 'needs_love':
-      return '#f59e0b'
-    case 'degraded':
-    case 'down':
-      return '#ef4444'
-    default:
-      return '#94a3b8'
-  }
-}
-
-function formatDeploy(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffH = Math.floor(diffMs / (1000 * 60 * 60))
-  if (diffH < 1) return 'deployed just now'
-  if (diffH < 24) return `deployed ${diffH}h ago`
-  const diffD = Math.floor(diffH / 24)
-  if (diffD === 1) return 'deployed yesterday'
-  return `deployed ${diffD}d ago`
-}
-
 export default function ProjectCarousel() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [current, setCurrent] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const touchStartRef = useRef<number | null>(null)
   const count = projects.length
 
-  useEffect(() => {
-    let active = true
-    fetchProjects()
-      .then((data) => {
-        if (active) setProjects(data)
-      })
-      .catch((err) => {
-        if (active) setError((err as Error).message)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
-
   const goTo = useCallback(
     (index: number) => {
-      if (count === 0) return
       setCurrent(((index % count) + count) % count)
     },
     [count],
@@ -69,7 +21,6 @@ export default function ProjectCarousel() {
   const prev = useCallback(() => goTo(current - 1), [current, goTo])
 
   const startAutoPlay = useCallback(() => {
-    if (count === 0) return
     intervalRef.current = setInterval(() => {
       setCurrent((c) => (c + 1) % count)
     }, AUTO_INTERVAL_MS)
@@ -115,30 +66,6 @@ export default function ProjectCarousel() {
     touchStartRef.current = null
   }
 
-  if (error) {
-    return (
-      <section className="projects" id="projects">
-        <div className="container">
-          <h2 className="section-title">Projects</h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-            Failed to load projects: {error}
-          </p>
-        </div>
-      </section>
-    )
-  }
-
-  if (loading || projects.length === 0) {
-    return (
-      <section className="projects" id="projects">
-        <div className="container">
-          <h2 className="section-title">Projects</h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading projects...</p>
-        </div>
-      </section>
-    )
-  }
-
   return (
     <section className="projects" id="projects">
       <div className="container">
@@ -162,33 +89,16 @@ export default function ProjectCarousel() {
                   <div className="carousel-card-header">
                     <div className="carousel-card-header-left">
                       <img src={project.icon} alt={project.title} className="carousel-card-icon" />
-                      <div className="carousel-card-titles">
-                        <h3 className="carousel-card-title">{project.title}</h3>
-                        <div className="carousel-card-meta">
-                          <span
-                            className="health-dot"
-                            style={{ backgroundColor: healthColor(project.health) }}
-                            title={project.health}
-                          />
-                          <span className="carousel-card-stage">{project.stage}</span>
-                          {project.last_deploy_at && (
-                            <span className="carousel-card-deploy">
-                              {formatDeploy(project.last_deploy_at)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      <h3 className="carousel-card-title">{project.title}</h3>
                     </div>
-                    {project.domain && (
-                      <a
-                        href={`https://${project.domain}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="carousel-card-visit"
-                      >
-                        Visit &rarr;
-                      </a>
-                    )}
+                    <a
+                      href={project.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="carousel-card-visit"
+                    >
+                      Visit &rarr;
+                    </a>
                   </div>
                   <p className="carousel-card-description">{project.description}</p>
                 </div>

@@ -28,7 +28,7 @@ export const projects: Project[] = [
     title: 'platform-ci',
     description:
       'On-demand CI/CD that replaced GitHub Actions for my apps: starts a build server from a snapshot, runs checks and production rollouts with health checks and automatic rollback, then shuts down.',
-    url: 'https://github.com/miles-automation/platform-infra',
+    url: 'https://github.com/miles-automation/platform-infra/tree/main/ci',
     icon: '/img/project.svg',
   },
   {

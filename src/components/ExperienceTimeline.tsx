@@ -16,14 +16,14 @@ const experiences = [
   },
   {
     date: 'Aug 2023 - April 2024',
-    title: 'Game Developer',
+    title: 'Game Designer, Co-Founder',
     company: 'Edventure Studios',
     description:
       'Built Edventure Trek, an educational game using Unity/C#/SQLite on the frontend and Python/FastAPI/MySQL on the backend. Launched a successful Kickstarter campaign that validated core concepts.',
   },
   {
     date: 'Nov 2015 - Aug 2023',
-    title: 'CTO & Backend Developer',
+    title: 'CTO / Co-Founder',
     company: 'Neowire',
     description:
       'Built a full Azure CI/CD pipeline with blue/green deployments. Scaled operations to 250,000+ users in European markets while managing diverse data regulations.',

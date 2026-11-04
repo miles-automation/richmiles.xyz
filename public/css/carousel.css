@@ -51,10 +51,6 @@
   border-radius: 8px;
 }
 
-.carousel-card-titles {
-  display: flex;
-  flex-direction: column;
-}
 
 .carousel-card-title {
   font-size: 1.25rem;
@@ -63,40 +59,10 @@
   margin: 0;
 }
 
-.carousel-card-tagline {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin: 2px 0 0;
-}
 
-.carousel-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
 
-.health-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
 
-.carousel-card-stage {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
 
-.carousel-card-deploy {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: var(--secondary);
-}
 
 .carousel-card-visit {
   font-family: 'JetBrains Mono', monospace;

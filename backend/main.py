@@ -13,21 +13,8 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from backend.config import settings
 from backend.logging_config import configure_logging
-from backend.portfolio_content import (
-    DEFAULT_PROJECT_ICON,
-    fallback_projects,
-    load_experience,
-    load_profile,
-    load_project_fallback,
-    load_project_icons,
-)
-from backend.portfolio_schemas import (
-    ExperienceListResponse,
-    LeadRequest,
-    ProfileResponse,
-    ProjectListResponse,
-    ProjectResponse,
-)
+from backend.portfolio_content import load_experience, load_profile
+from backend.portfolio_schemas import ExperienceListResponse, LeadRequest, ProfileResponse
 
 # Python's mimetypes DB doesn't always know modern web formats, so FileResponse
 # would serve them as application/octet-stream. Register them explicitly.
@@ -175,38 +162,6 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-def _enrich_live_projects(sparks: list[dict[str, Any]]) -> list[ProjectResponse]:
-    icons = load_project_icons()
-    fallback_by_id = {project.id: project for project in load_project_fallback()}
-    project_order = {project.id: index for index, project in enumerate(load_project_fallback())}
-    projects: list[ProjectResponse] = []
-
-    for spark in sparks:
-        slug = spark.get("slug")
-        if not slug or slug == "richmiles-xyz":
-            continue
-        if spark.get("stage") not in {"live", "building"}:
-            continue
-
-        fallback = fallback_by_id.get(slug)
-        projects.append(
-            ProjectResponse(
-                id=slug,
-                title=spark.get("name") or (fallback.title if fallback else slug),
-                description=spark.get("description") or (fallback.description if fallback else ""),
-                domain=spark.get("domain") or (fallback.domain if fallback else None),
-                stage=spark.get("stage") or (fallback.stage if fallback else "building"),
-                health=spark.get("health") or (fallback.health if fallback else "unknown"),
-                last_deploy_at=spark.get("last_deploy_at"),
-                category=spark.get("category") or (fallback.category if fallback else None),
-                icon=icons.get(slug, fallback.icon if fallback else DEFAULT_PROJECT_ICON),
-            )
-        )
-
-    projects.sort(key=lambda project: (project_order.get(project.id, len(project_order)), project.title.lower()))
-    return projects
-
-
 @app.get("/healthz")
 async def healthz():
     return JSONResponse({"status": "ok"})
@@ -225,29 +180,6 @@ async def get_profile():
 @app.get("/api/v1/experience", response_model=ExperienceListResponse)
 async def get_experience():
     return load_experience()
-
-
-@app.get("/api/v1/projects", response_model=ProjectListResponse)
-async def get_projects():
-    """Fetch live sparks from Spark Swarm and return as portfolio projects."""
-    api_key = settings.spark_swarm_api_key
-    if not api_key:
-        return fallback_projects(warning="Spark Swarm API key is not configured; serving fallback portfolio data.")
-
-    if _http_client is None:
-        raise HTTPException(status_code=503, detail="Service not ready")
-
-    try:
-        resp = await _http_client.get(
-            f"{settings.spark_swarm_api_url}/sparks",
-            headers={"X-API-Key": api_key},
-        )
-        resp.raise_for_status()
-    except httpx.HTTPError:
-        return fallback_projects(warning="Spark Swarm is unavailable; serving fallback portfolio data.")
-
-    sparks = resp.json().get("sparks", [])
-    return ProjectListResponse(projects=_enrich_live_projects(sparks), source="live")
 
 
 # The consulting form moved to milesautomation.com. Keep this endpoint for existing callers and defensive coverage.

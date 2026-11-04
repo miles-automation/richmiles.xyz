@@ -5,8 +5,8 @@ export default function Services() {
         <h2 className="section-title">Work with me.</h2>
         <div className="services-copy">
           <p>
-            I&apos;m a lead engineer with about 20 years of experience shipping software. I
-            currently work on LLM infrastructure at Sturdy AI, and I build and operate a fleet of
+            I&apos;m a senior engineer with about 20 years of experience shipping software. I
+            currently work on LLM infrastructure at Sturdy, and I build and operate a fleet of
             production side projects.
           </p>
           <p>

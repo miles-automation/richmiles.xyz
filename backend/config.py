@@ -7,7 +7,6 @@ class Settings(BaseSettings):
 
     environment: str = "prod"
     spark_swarm_api_url: str = "https://sparkswarm.com/api/v1"
-    spark_swarm_api_key: str | None = None
 
 
 settings = Settings()

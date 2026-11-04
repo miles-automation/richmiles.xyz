@@ -9,8 +9,8 @@ describe('ExperienceTimeline', () => {
 
   it('renders experience items', () => {
     render(<ExperienceTimeline />)
-    expect(screen.getByText('Lead Software Engineer')).toBeInTheDocument()
-    expect(screen.getByText('Sturdy AI')).toBeInTheDocument()
+    expect(screen.getByText('Senior Software Engineer')).toBeInTheDocument()
+    expect(screen.getByText('Sturdy')).toBeInTheDocument()
   })
 
   it('renders dates for experience items', () => {

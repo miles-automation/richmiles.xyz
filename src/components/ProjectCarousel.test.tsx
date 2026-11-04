@@ -1,52 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ProjectCarousel from './ProjectCarousel'
-import { type Project } from '../data/projects'
-
-const mockProjects: Project[] = [
-  {
-    id: 'proj-1',
-    title: 'Alpha',
-    description: 'First project',
-    domain: 'alpha.example.com',
-    stage: 'production',
-    health: 'healthy',
-    last_deploy_at: new Date().toISOString(),
-    category: 'web',
-    icon: '/icons/alpha.svg',
-  },
-  {
-    id: 'proj-2',
-    title: 'Beta',
-    description: 'Second project',
-    domain: null,
-    stage: 'building',
-    health: 'needs_love',
-    last_deploy_at: null,
-    category: 'tool',
-    icon: '/icons/beta.svg',
-  },
-  {
-    id: 'proj-3',
-    title: 'Gamma',
-    description: 'Third project',
-    domain: 'gamma.example.com',
-    stage: 'production',
-    health: 'degraded',
-    last_deploy_at: '2025-01-01T00:00:00Z',
-    category: 'web',
-    icon: '/icons/gamma.svg',
-  },
-]
-
-// Mock the fetchProjects function
-vi.mock('../data/projects', async () => {
-  const actual = await vi.importActual('../data/projects')
-  return {
-    ...actual,
-    fetchProjects: vi.fn(() => Promise.resolve(mockProjects)),
-  }
-})
+import { projects } from '../data/projects'
 
 describe('ProjectCarousel', () => {
   beforeEach(() => {
@@ -57,49 +12,52 @@ describe('ProjectCarousel', () => {
     vi.useRealTimers()
   })
 
-  it('renders the Projects heading', async () => {
+  it('renders the Projects heading', () => {
     render(<ProjectCarousel />)
     expect(screen.getByText('Projects')).toBeInTheDocument()
   })
 
-  it('renders project titles after loading', async () => {
+  it('renders the curated projects in order', () => {
     render(<ProjectCarousel />)
-    await waitFor(() => {
-      expect(screen.getByText('Alpha')).toBeInTheDocument()
-    })
-    expect(screen.getByText('Beta')).toBeInTheDocument()
-    expect(screen.getByText('Gamma')).toBeInTheDocument()
+    const titles = screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent)
+    expect(titles).toEqual([
+      'Slopticus',
+      'Sluice',
+      'platform-ci',
+      'Human Index',
+      'In the Event of My Death',
+      'Spark Swarm',
+    ])
   })
 
-  it('renders visit links for projects with domains', async () => {
+  it('links every project to its url', () => {
     render(<ProjectCarousel />)
-    await waitFor(() => {
-      expect(screen.getByText('Alpha')).toBeInTheDocument()
-    })
-    const visitLinks = screen.getAllByText(/Visit/)
-    expect(visitLinks).toHaveLength(2)
+    const hrefs = screen
+      .getAllByRole('link', { name: /Visit/ })
+      .map((el) => el.getAttribute('href'))
+    expect(hrefs).toEqual(projects.map((project) => project.url))
+  })
+
+  it('shows no health, stage or deploy badges', () => {
+    render(<ProjectCarousel />)
+    expect(document.querySelector('.health-dot')).toBeNull()
+    expect(document.querySelector('.carousel-card-stage')).toBeNull()
+    expect(screen.queryByText(/deployed/)).toBeNull()
+    expect(screen.queryByText(/needs_love|Noodle/)).toBeNull()
   })
 
   it('navigates to next project when next arrow is clicked', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(<ProjectCarousel />)
-    await waitFor(() => {
-      expect(screen.getByText('Alpha')).toBeInTheDocument()
-    })
 
-    const nextBtn = screen.getByLabelText('Next project')
-    await user.click(nextBtn)
+    await user.click(screen.getByLabelText('Next project'))
 
     const cards = document.querySelectorAll('.carousel-card')
     expect(cards[1]).toHaveClass('active')
   })
 
-  it('renders the carousel with correct aria attributes', async () => {
+  it('renders the carousel with correct aria attributes', () => {
     render(<ProjectCarousel />)
-    await waitFor(() => {
-      expect(screen.getByText('Alpha')).toBeInTheDocument()
-    })
-    const region = screen.getByRole('region', { name: 'Project carousel' })
-    expect(region).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Project carousel' })).toBeInTheDocument()
   })
 })

@@ -4,7 +4,7 @@ const experiences = [
     title: 'Senior Software Engineer',
     company: 'Sturdy',
     description:
-      "Work across the AI assistant, LLM services, inference pipeline, data engineering tools and frontend on a small team. Designed and built most of the AI report and email-digest platform (21,000+ reports, digests to 600+ customer users a month), built the LLM classification and conversation-summary pipelines (4 to 6 billion tokens a month), and rebuilt the assistant's people search from 45 seconds to 7 milliseconds worst case.",
+      "Work across the AI assistant, LLM services, inference pipeline, data engineering tools and frontend on a small team. Designed and built most of the AI report and email-digest platform (21,000+ reports, a weekly digest to about 600 customer users), built the LLM classification and conversation-summary pipelines (4 to 6 billion tokens a month), and rebuilt the assistant's people search from 45 seconds to 7 milliseconds worst case.",
   },
   {
     date: 'April 2024 - Present',

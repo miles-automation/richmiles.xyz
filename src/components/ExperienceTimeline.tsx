@@ -19,7 +19,7 @@ const experiences = [
     title: 'Game Designer, Co-Founder',
     company: 'Edventure Studios',
     description:
-      'Built Edventure Trek, an educational game using Unity/C#/SQLite on the frontend and Python/FastAPI/MySQL on the backend. Launched a successful Kickstarter campaign that validated core concepts.',
+      'Helped build a demo of Edventure Trek, an educational game, for a Kickstarter campaign. The demo used Unity, C#, and SQLite on the frontend and Python, FastAPI, and MySQL on the backend.',
   },
   {
     date: 'Nov 2015 - Aug 2023',
